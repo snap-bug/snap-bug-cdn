@@ -5,12 +5,5 @@
     "node": "22.11.0"
   },
   "type": "module",
-  "main": "index.js",
-  "scripts": {
-    "build": "vite build"
-  },
-  "license": "ISC",
-  "devDependencies": {
-    "vite": "^6.2.3"
-  }
+  "license": "ISC"
 }
