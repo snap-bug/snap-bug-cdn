@@ -3,6 +3,10 @@
 
   window.snapbugState = {};
   window.snapbugPreviousDomHash = null;
+  const HASH_RADIX = 16;
+  const HASH_PAD_LENGTH = 2;
+  const STYLE_SELECTOR = "style";
+  const LINK_STYLESHEET_SELECTOR = "link[rel='stylesheet']";
 
   const getFiberRoot = () => {
     const elements = document.body.children;
@@ -96,14 +100,25 @@
   };
 
   const getDOMHash = async (domString) => {
-    const HASH_RADIX = 16;
-    const HASH_PAD_LENGTH = 2;
     const encoder = new TextEncoder();
     const data = encoder.encode(domString);
     const hashBuffer = await crypto.subtle.digest("SHA-256", data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
 
-    return hashArray.map((byte) => byte.toString(HASH_RADIX).padStart(HASH_PAD_LENGTH, "0")).join("");
+    return Array.from(new Uint8Array(hashBuffer))
+      .map((byte) => byte.toString(HASH_RADIX).padStart(HASH_PAD_LENGTH, "0"))
+      .join("");
+  };
+
+  const extractStyles = () => {
+    const styleTags = Array.from(document.querySelectorAll(STYLE_SELECTOR))
+      .map((tag) => tag.outerHTML)
+      .join("\n");
+
+    const linkTags = Array.from(document.querySelectorAll(LINK_STYLESHEET_SELECTOR))
+      .map((tag) => tag.outerHTML)
+      .join("\n");
+
+    return `${linkTags}\n${styleTags}`;
   };
 
   const detectStateChange = async () => {
@@ -118,6 +133,7 @@
 
       const root = document.getElementById("root") || document.getElementById("app");
       const domTree = root?.outerHTML || "";
+      const styles = extractStyles();
 
       const currentHash = await getDOMHash(domTree);
       const isDomChanged = currentHash !== window.snapbugPreviousDomHash;
@@ -134,6 +150,7 @@
             timestamp: new Date().toISOString(),
             state: newState,
             dom: isDomChanged ? domTree : null,
+            styles: isDomChanged ? styles : null,
           }),
         });
       } catch (error) {
